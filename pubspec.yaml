@@ -35,11 +35,11 @@ dependencies:
   latlong2: ^0.9.1
 
   # Serial / Hardware
-  flutter_usb_serial: ^0.5.0
+  usb_serial: ^0.5.2
   flutter_blue_plus: ^1.32.0
 
   # Audio (voice messages)
-  record: ^5.0.0
+  record: ^5.2.1
   audioplayers: ^6.0.0
 
   # File handling
@@ -72,3 +72,6 @@ flutter:
   uses-material-design: true
   assets:
     - assets/
+
+dependency_overrides:
+  record_linux: ^1.0.0
