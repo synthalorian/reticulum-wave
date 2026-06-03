@@ -8,7 +8,9 @@ import '../theme.dart';
 /// Compose screen for starting a new conversation.
 /// Select a peer or enter a hash manually, then send the first message.
 class ComposeScreen extends ConsumerStatefulWidget {
-  const ComposeScreen({super.key});
+  const ComposeScreen({super.key, this.prefilledContent});
+
+  final String? prefilledContent;
 
   @override
   ConsumerState<ComposeScreen> createState() => _ComposeScreenState();
@@ -18,6 +20,14 @@ class _ComposeScreenState extends ConsumerState<ComposeScreen> {
   final _hashController = TextEditingController();
   final _messageController = TextEditingController();
   bool _sending = false;
+
+  @override
+  void initState() {
+    super.initState();
+    if (widget.prefilledContent != null) {
+      _messageController.text = widget.prefilledContent!;
+    }
+  }
 
   @override
   void dispose() {

@@ -54,7 +54,7 @@ class _ConversationsScreenState extends ConsumerState<ConversationsScreen> {
           IconButton(
             icon: const Icon(Icons.search, color: AppColors.textSecondary),
             onPressed: () {
-              // TODO: message search
+              context.push('/search');
             },
           ),
         ],

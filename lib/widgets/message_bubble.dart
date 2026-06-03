@@ -7,10 +7,14 @@ import '../theme.dart';
 class MessageBubble extends StatelessWidget {
   const MessageBubble({
     required this.message,
+    this.onReply,
+    this.onForward,
     super.key,
   });
 
   final LxmfMessage message;
+  final VoidCallback? onReply;
+  final VoidCallback? onForward;
 
   IconData get _statusIcon {
     switch (message.status) {
@@ -46,70 +50,141 @@ class MessageBubble extends StatelessWidget {
     return '$hour:$minute';
   }
 
+  void _showMessageActions(BuildContext context) {
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: AppColors.surface,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
+      ),
+      builder: (context) => SafeArea(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const SizedBox(height: 8),
+            Container(
+              width: 40,
+              height: 4,
+              decoration: BoxDecoration(
+                color: AppColors.divider,
+                borderRadius: BorderRadius.circular(2),
+              ),
+            ),
+            const SizedBox(height: 16),
+            ListTile(
+              leading: const Icon(Icons.reply, color: AppColors.electricPurple),
+              title: const Text('Reply', style: TextStyle(color: AppColors.textPrimary)),
+              onTap: () {
+                Navigator.pop(context);
+                onReply?.call();
+              },
+            ),
+            ListTile(
+              leading: const Icon(Icons.forward, color: AppColors.electricPurple),
+              title: const Text('Forward', style: TextStyle(color: AppColors.textPrimary)),
+              onTap: () {
+                Navigator.pop(context);
+                onForward?.call();
+              },
+            ),
+            const SizedBox(height: 16),
+          ],
+        ),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final isOutgoing = message.isOutgoing;
 
     return Align(
       alignment: isOutgoing ? Alignment.centerRight : Alignment.centerLeft,
-      child: Container(
-        margin: EdgeInsets.only(
-          left: isOutgoing ? 64 : 12,
-          right: isOutgoing ? 12 : 64,
-          top: 4,
-          bottom: 4,
-        ),
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-        decoration: BoxDecoration(
-          color: isOutgoing
-              ? AppColors.electricPurple.withValues(alpha: 0.25)
-              : AppColors.surface,
-          borderRadius: BorderRadius.only(
-            topLeft: const Radius.circular(16),
-            topRight: const Radius.circular(16),
-            bottomLeft: Radius.circular(isOutgoing ? 16 : 4),
-            bottomRight: Radius.circular(isOutgoing ? 4 : 16),
+      child: GestureDetector(
+        onLongPress: () => _showMessageActions(context),
+        child: Container(
+          margin: EdgeInsets.only(
+            left: isOutgoing ? 64 : 12,
+            right: isOutgoing ? 12 : 64,
+            top: 4,
+            bottom: 4,
           ),
-          border: Border.all(
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+          decoration: BoxDecoration(
             color: isOutgoing
-                ? AppColors.electricPurple.withValues(alpha: 0.4)
-                : AppColors.divider,
-            width: 1,
-          ),
-        ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              message.content,
-              style: const TextStyle(
-                color: AppColors.textPrimary,
-                fontSize: 15,
-                height: 1.3,
-              ),
+                ? AppColors.electricPurple.withValues(alpha: 0.25)
+                : AppColors.surface,
+            borderRadius: BorderRadius.only(
+              topLeft: const Radius.circular(16),
+              topRight: const Radius.circular(16),
+              bottomLeft: Radius.circular(isOutgoing ? 16 : 4),
+              bottomRight: Radius.circular(isOutgoing ? 4 : 16),
             ),
-            const SizedBox(height: 4),
-            Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Text(
-                  _time,
-                  style: TextStyle(
-                    color: AppColors.textSecondary.withValues(alpha: 0.7),
-                    fontSize: 11,
+            border: Border.all(
+              color: isOutgoing
+                  ? AppColors.electricPurple.withValues(alpha: 0.4)
+                  : AppColors.divider,
+              width: 1,
+            ),
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              // Reply preview
+              if (message.replyToId != null)
+                Container(
+                  margin: const EdgeInsets.only(bottom: 6),
+                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                  decoration: BoxDecoration(
+                    color: AppColors.darkBackground.withValues(alpha: 0.5),
+                    borderRadius: BorderRadius.circular(6),
+                    border: Border(
+                      left: BorderSide(
+                        color: AppColors.electricPurple.withValues(alpha: 0.6),
+                        width: 3,
+                      ),
+                    ),
+                  ),
+                  child: Text(
+                    'Replying to message',
+                    style: TextStyle(
+                      color: AppColors.textSecondary.withValues(alpha: 0.8),
+                      fontSize: 12,
+                      fontStyle: FontStyle.italic,
+                    ),
                   ),
                 ),
-                if (isOutgoing) ...[
-                  const SizedBox(width: 4),
-                  Icon(
-                    _statusIcon,
-                    size: 14,
-                    color: _statusColor,
+              Text(
+                message.content,
+                style: const TextStyle(
+                  color: AppColors.textPrimary,
+                  fontSize: 15,
+                  height: 1.3,
+                ),
+              ),
+              const SizedBox(height: 4),
+              Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Text(
+                    _time,
+                    style: TextStyle(
+                      color: AppColors.textSecondary.withValues(alpha: 0.7),
+                      fontSize: 11,
+                    ),
                   ),
+                  if (isOutgoing) ...[
+                    const SizedBox(width: 4),
+                    Icon(
+                      _statusIcon,
+                      size: 14,
+                      color: _statusColor,
+                    ),
+                  ],
                 ],
-              ],
-            ),
-          ],
+              ),
+            ],
+          ),
         ),
       ),
     );
