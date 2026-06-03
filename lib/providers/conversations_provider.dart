@@ -2,8 +2,23 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../models/models.dart';
 
 /// Holds the list of conversations and handles CRUD operations.
+/// Supports pagination for large conversation lists.
 class ConversationsNotifier extends StateNotifier<List<Conversation>> {
   ConversationsNotifier() : super([]);
+
+  static const int pageSize = 20;
+  int _loadedCount = 0;
+
+  /// Load the next page of conversations from a full list.
+  void loadPage(List<Conversation> all, {bool refresh = false}) {
+    if (refresh) _loadedCount = 0;
+    final end = (_loadedCount + pageSize).clamp(0, all.length);
+    final page = all.sublist(0, end);
+    _loadedCount = page.length;
+    state = page;
+  }
+
+  bool get hasMore => _loadedCount < state.length;
 
   void addConversation(Conversation conversation) {
     state = [...state, conversation];
@@ -62,6 +77,7 @@ class ConversationsNotifier extends StateNotifier<List<Conversation>> {
 
   void clearAll() {
     state = [];
+    _loadedCount = 0;
   }
 }
 
@@ -83,4 +99,12 @@ final sortedConversationsProvider = Provider<List<Conversation>>((ref) {
     return bTime.compareTo(aTime);
   });
   return sorted;
+});
+
+/// Paginated conversations provider with lazy loading support.
+final paginatedConversationsProvider = Provider<List<Conversation>>((ref) {
+  final sorted = ref.watch(sortedConversationsProvider);
+  final notifier = ref.read(conversationsProvider.notifier);
+  notifier.loadPage(sorted);
+  return ref.watch(conversationsProvider);
 });

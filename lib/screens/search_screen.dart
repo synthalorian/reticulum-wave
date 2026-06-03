@@ -69,46 +69,52 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
                     style: TextStyle(color: AppColors.textSecondary),
                   ),
                 )
-              : ListView.separated(
-                  itemCount: results.length,
-                  separatorBuilder: (_, __) => const Divider(height: 1),
-                  itemBuilder: (context, index) {
-                    final result = results[index];
-                    return ListTile(
-                      leading: CircleAvatar(
-                        backgroundColor: AppColors.electricPurple.withValues(alpha: 0.2),
-                        child: Text(
-                          result.conversation.name.isNotEmpty
-                              ? result.conversation.name[0].toUpperCase()
-                              : '?',
-                          style: const TextStyle(color: AppColors.electricPurple),
+              : Semantics(
+                  label: 'Search results',
+                  child: ListView.separated(
+                    itemCount: results.length,
+                    separatorBuilder: (_, __) => const Divider(height: 1),
+                    itemBuilder: (context, index) {
+                      final result = results[index];
+                      return Semantics(
+                        label: 'Message from ${result.conversation.name}',
+                        child: ListTile(
+                          leading: CircleAvatar(
+                            backgroundColor: AppColors.electricPurple.withValues(alpha: 0.2),
+                            child: Text(
+                              result.conversation.name.isNotEmpty
+                                  ? result.conversation.name[0].toUpperCase()
+                                  : '?',
+                              style: const TextStyle(color: AppColors.electricPurple),
+                            ),
+                          ),
+                          title: Text(
+                            result.conversation.name,
+                            style: const TextStyle(
+                              color: AppColors.textPrimary,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                          subtitle: Text(
+                            result.message.content,
+                            maxLines: 2,
+                            overflow: TextOverflow.ellipsis,
+                            style: const TextStyle(color: AppColors.textSecondary),
+                          ),
+                          trailing: Text(
+                            _formatTime(result.message.timestamp),
+                            style: TextStyle(
+                              color: AppColors.textSecondary.withValues(alpha: 0.7),
+                              fontSize: 12,
+                            ),
+                          ),
+                          onTap: () {
+                            context.push('/chat/${result.conversation.id}');
+                          },
                         ),
-                      ),
-                      title: Text(
-                        result.conversation.name,
-                        style: const TextStyle(
-                          color: AppColors.textPrimary,
-                          fontWeight: FontWeight.w600,
-                        ),
-                      ),
-                      subtitle: Text(
-                        result.message.content,
-                        maxLines: 2,
-                        overflow: TextOverflow.ellipsis,
-                        style: const TextStyle(color: AppColors.textSecondary),
-                      ),
-                      trailing: Text(
-                        _formatTime(result.message.timestamp),
-                        style: TextStyle(
-                          color: AppColors.textSecondary.withValues(alpha: 0.7),
-                          fontSize: 12,
-                        ),
-                      ),
-                      onTap: () {
-                        context.push('/chat/${result.conversation.id}');
-                      },
-                    );
-                  },
+                      );
+                    },
+                  ),
                 ),
     );
   }

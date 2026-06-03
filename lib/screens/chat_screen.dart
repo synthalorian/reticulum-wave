@@ -23,6 +23,9 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
   final _controller = TextEditingController();
   final _scrollController = ScrollController();
 
+  static const int _messagesPerPage = 50;
+  int _visibleMessageCount = _messagesPerPage;
+
   @override
   void initState() {
     super.initState();
@@ -34,6 +37,20 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
         _controller.selection = TextSelection.collapsed(offset: draft.length);
       }
     });
+    _scrollController.addListener(_onScroll);
+  }
+
+  void _onScroll() {
+    if (_scrollController.position.pixels <= 100) {
+      final conversation = ref.read(conversationsProvider)
+          .firstWhere((c) => c.id == widget.conversationId);
+      if (_visibleMessageCount < conversation.messages.length) {
+        setState(() {
+          _visibleMessageCount = (_visibleMessageCount + _messagesPerPage)
+              .clamp(0, conversation.messages.length);
+        });
+      }
+    }
   }
 
   @override
@@ -239,9 +256,16 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
                 : ListView.builder(
                     controller: _scrollController,
                     padding: const EdgeInsets.symmetric(vertical: 8),
-                    itemCount: conversation.messages.length,
+                    itemCount: conversation.messages.length > _visibleMessageCount
+                        ? _visibleMessageCount
+                        : conversation.messages.length,
                     itemBuilder: (context, index) {
-                      final msg = conversation.messages[index];
+                      final startIndex = conversation.messages.length - _visibleMessageCount;
+                      final msgIndex = startIndex + index;
+                      if (msgIndex < 0 || msgIndex >= conversation.messages.length) {
+                        return const SizedBox.shrink();
+                      }
+                      final msg = conversation.messages[msgIndex];
                       return MessageBubble(
                         message: msg,
                         onReply: () => _startReply(msg),
