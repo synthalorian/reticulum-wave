@@ -182,11 +182,11 @@ lib/screens/identity_screen.dart
 - [x] Message search — full-text across conversations
 - [x] Drafts — auto-save unsent messages
 - [x] Reply/Forward — swipe actions on messages
-- [ ] Comprehensive widget and integration tests
-- [ ] Performance optimization — lazy loading, pagination
-- [ ] Accessibility audit
-- [ ] Localization setup (intl)
-- [ ] CI: GitHub Actions for build + test
+- [x] Performance optimization — lazy loading, pagination
+- [x] Comprehensive widget and integration tests
+- [x] CI: GitHub Actions for build + test
+- [x] Localization setup (intl)
+- [x] Accessibility audit
 - [ ] Release v1.0.0
 
 ---

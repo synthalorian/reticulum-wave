@@ -17,6 +17,8 @@ class ConversationsScreen extends ConsumerStatefulWidget {
 }
 
 class _ConversationsScreenState extends ConsumerState<ConversationsScreen> {
+  final ScrollController _scrollController = ScrollController();
+
   @override
   void initState() {
     super.initState();
@@ -27,6 +29,24 @@ class _ConversationsScreenState extends ConsumerState<ConversationsScreen> {
         notifier.addConversation(c);
       }
     });
+    _scrollController.addListener(_onScroll);
+  }
+
+  @override
+  void dispose() {
+    _scrollController.dispose();
+    super.dispose();
+  }
+
+  void _onScroll() {
+    if (_scrollController.position.pixels >=
+        _scrollController.position.maxScrollExtent - 200) {
+      final notifier = ref.read(conversationsProvider.notifier);
+      if (notifier.hasMore) {
+        final all = ref.read(sortedConversationsProvider);
+        notifier.loadPage(all);
+      }
+    }
   }
 
   @override
@@ -67,6 +87,7 @@ class _ConversationsScreenState extends ConsumerState<ConversationsScreen> {
               ),
             )
           : ListView.separated(
+              controller: _scrollController,
               itemCount: conversations.length,
               separatorBuilder: (_, __) => const Divider(
                 height: 1,
@@ -90,6 +111,7 @@ class _ConversationsScreenState extends ConsumerState<ConversationsScreen> {
         onPressed: () {
           context.push('/compose');
         },
+        tooltip: 'New message',
         child: const Icon(Icons.add),
       ),
     );
