@@ -24,7 +24,27 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
   final _scrollController = ScrollController();
 
   @override
+  void initState() {
+    super.initState();
+    // Restore draft on open
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      final draft = ref.read(draftsProvider)[widget.conversationId] ?? '';
+      if (draft.isNotEmpty) {
+        _controller.text = draft;
+        _controller.selection = TextSelection.collapsed(offset: draft.length);
+      }
+    });
+  }
+
+  @override
   void dispose() {
+    // Auto-save draft on close
+    final text = _controller.text.trim();
+    if (text.isNotEmpty) {
+      ref.read(draftsProvider.notifier).setDraft(widget.conversationId, text);
+    } else {
+      ref.read(draftsProvider.notifier).clearDraft(widget.conversationId);
+    }
     _controller.dispose();
     _scrollController.dispose();
     super.dispose();
@@ -42,6 +62,9 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
       content: text,
     );
 
+    // Clear draft on send
+    ref.read(draftsProvider.notifier).clearDraft(widget.conversationId);
+
     // Optimistically add to local state
     final message = LxmfMessage(
       id: 'local_${DateTime.now().millisecondsSinceEpoch}',
@@ -51,10 +74,12 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
       timestamp: DateTime.now(),
       status: MessageStatus.sending,
       isOutgoing: true,
+      replyToId: _replyingTo?.id,
     );
 
     ref.read(conversationsProvider.notifier).addMessage(widget.conversationId, message);
     _controller.clear();
+    _cancelReply();
 
     // Scroll to bottom
     WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -66,6 +91,25 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
         );
       }
     });
+  }
+
+  LxmfMessage? _replyingTo;
+
+  void _startReply(LxmfMessage message) {
+    setState(() {
+      _replyingTo = message;
+    });
+  }
+
+  void _cancelReply() {
+    setState(() {
+      _replyingTo = null;
+    });
+  }
+
+  void _forwardMessage(LxmfMessage message) {
+    // Navigate to compose with pre-filled content
+    context.push('/compose', extra: message.content);
   }
 
   void _showAttachmentSheet(BuildContext context) {
@@ -197,7 +241,12 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
                     padding: const EdgeInsets.symmetric(vertical: 8),
                     itemCount: conversation.messages.length,
                     itemBuilder: (context, index) {
-                      return MessageBubble(message: conversation.messages[index]);
+                      final msg = conversation.messages[index];
+                      return MessageBubble(
+                        message: msg,
+                        onReply: () => _startReply(msg),
+                        onForward: () => _forwardMessage(msg),
+                      );
                     },
                   ),
           ),
@@ -206,6 +255,8 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
             onSend: _sendMessage,
             onAttach: () => _showAttachmentSheet(context),
             onVoice: () => _showVoiceRecorder(context),
+            replyingTo: _replyingTo,
+            onCancelReply: _cancelReply,
           ),
         ],
       ),
@@ -220,12 +271,16 @@ class _ComposeBar extends StatelessWidget {
     required this.onSend,
     this.onAttach,
     this.onVoice,
+    this.replyingTo,
+    this.onCancelReply,
   });
 
   final TextEditingController controller;
   final VoidCallback onSend;
   final VoidCallback? onAttach;
   final VoidCallback? onVoice;
+  final LxmfMessage? replyingTo;
+  final VoidCallback? onCancelReply;
 
   @override
   Widget build(BuildContext context) {
@@ -236,47 +291,101 @@ class _ComposeBar extends StatelessWidget {
         border: Border(top: BorderSide(color: AppColors.divider)),
       ),
       child: SafeArea(
-        child: Row(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
           children: [
-            IconButton(
-              icon: const Icon(Icons.attach_file, color: AppColors.textSecondary),
-              onPressed: onAttach,
-            ),
-            IconButton(
-              icon: const Icon(Icons.mic, color: AppColors.textSecondary),
-              onPressed: onVoice,
-            ),
-            Expanded(
-              child: TextField(
-                controller: controller,
-                style: const TextStyle(color: AppColors.textPrimary),
-                decoration: InputDecoration(
-                  hintText: 'Message...',
-                  hintStyle: TextStyle(color: AppColors.textSecondary.withValues(alpha: 0.6)),
-                  filled: true,
-                  fillColor: AppColors.darkBackground,
-                  contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(24),
-                    borderSide: BorderSide.none,
+            if (replyingTo != null)
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                margin: const EdgeInsets.only(bottom: 8),
+                decoration: BoxDecoration(
+                  color: AppColors.darkBackground.withValues(alpha: 0.5),
+                  borderRadius: BorderRadius.circular(8),
+                  border: Border(
+                    left: BorderSide(
+                      color: AppColors.electricPurple.withValues(alpha: 0.6),
+                      width: 3,
+                    ),
                   ),
                 ),
-                textInputAction: TextInputAction.send,
-                onSubmitted: (_) => onSend(),
-                maxLines: null,
-              ),
-            ),
-            const SizedBox(width: 8),
-            GestureDetector(
-              onTap: onSend,
-              child: Container(
-                padding: const EdgeInsets.all(10),
-                decoration: const BoxDecoration(
-                  color: AppColors.electricPurple,
-                  shape: BoxShape.circle,
+                child: Row(
+                  children: [
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Text(
+                            'Replying to',
+                            style: TextStyle(
+                              color: AppColors.textSecondary.withValues(alpha: 0.8),
+                              fontSize: 11,
+                            ),
+                          ),
+                          Text(
+                            replyingTo!.content,
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: const TextStyle(
+                              color: AppColors.textPrimary,
+                              fontSize: 13,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    IconButton(
+                      icon: const Icon(Icons.close, color: AppColors.textSecondary, size: 18),
+                      onPressed: onCancelReply,
+                      padding: EdgeInsets.zero,
+                      constraints: const BoxConstraints(),
+                    ),
+                  ],
                 ),
-                child: const Icon(Icons.send, color: Colors.white, size: 20),
               ),
+            Row(
+              children: [
+                IconButton(
+                  icon: const Icon(Icons.attach_file, color: AppColors.textSecondary),
+                  onPressed: onAttach,
+                ),
+                IconButton(
+                  icon: const Icon(Icons.mic, color: AppColors.textSecondary),
+                  onPressed: onVoice,
+                ),
+                Expanded(
+                  child: TextField(
+                    controller: controller,
+                    style: const TextStyle(color: AppColors.textPrimary),
+                    decoration: InputDecoration(
+                      hintText: 'Message...',
+                      hintStyle: TextStyle(color: AppColors.textSecondary.withValues(alpha: 0.6)),
+                      filled: true,
+                      fillColor: AppColors.darkBackground,
+                      contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(24),
+                        borderSide: BorderSide.none,
+                      ),
+                    ),
+                    textInputAction: TextInputAction.send,
+                    onSubmitted: (_) => onSend(),
+                    maxLines: null,
+                  ),
+                ),
+                const SizedBox(width: 8),
+                GestureDetector(
+                  onTap: onSend,
+                  child: Container(
+                    padding: const EdgeInsets.all(10),
+                    decoration: const BoxDecoration(
+                      color: AppColors.electricPurple,
+                      shape: BoxShape.circle,
+                    ),
+                    child: const Icon(Icons.send, color: Colors.white, size: 20),
+                  ),
+                ),
+              ],
             ),
           ],
         ),

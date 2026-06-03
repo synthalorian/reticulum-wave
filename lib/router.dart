@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'models/peer.dart';
 import 'screens/conversations_screen.dart';
@@ -10,6 +11,7 @@ import 'screens/map_screen.dart';
 import 'screens/identity_screen.dart';
 import 'screens/rnode_screen.dart';
 import 'screens/settings_screen.dart';
+import 'screens/search_screen.dart';
 import 'widgets/scaffold_with_nav.dart';
 
 /// Route paths for the app.
@@ -19,6 +21,7 @@ class Routes {
   static const String conversations = '/';
   static const String chat = '/chat/:id';
   static const String compose = '/compose';
+  static const String search = '/search';
   static const String peerDetail = '/peer/:hash';
   static const String network = '/network';
   static const String map = '/map';
@@ -50,7 +53,13 @@ final router = GoRouter(
             ),
             GoRoute(
               path: 'compose',
-              builder: (context, state) => const ComposeScreen(),
+              builder: (context, state) => ComposeScreen(
+                prefilledContent: state.extra as String?,
+              ),
+            ),
+            GoRoute(
+              path: 'search',
+              builder: (context, state) => const SearchScreen(),
             ),
           ],
         ),

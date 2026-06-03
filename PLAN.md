@@ -179,9 +179,9 @@ lib/screens/identity_screen.dart
 **Goal:** Production-quality release on all platforms.
 
 ### Pending
-- [ ] Message search — full-text across conversations
-- [ ] Drafts — auto-save unsent messages
-- [ ] Reply/Forward — swipe actions on messages
+- [x] Message search — full-text across conversations
+- [x] Drafts — auto-save unsent messages
+- [x] Reply/Forward — swipe actions on messages
 - [ ] Comprehensive widget and integration tests
 - [ ] Performance optimization — lazy loading, pagination
 - [ ] Accessibility audit
