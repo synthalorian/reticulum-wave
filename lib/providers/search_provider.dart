@@ -1,4 +1,5 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'conversations_provider.dart';
 import '../models/models.dart';
 
 /// Search query string.
