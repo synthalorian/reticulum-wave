@@ -1,6 +1,10 @@
+import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import 'models/peer.dart';
 import 'screens/conversations_screen.dart';
 import 'screens/chat_screen.dart';
+import 'screens/compose_screen.dart';
+import 'screens/peer_detail_screen.dart';
 import 'screens/network_screen.dart';
 import 'screens/map_screen.dart';
 import 'screens/identity_screen.dart';
@@ -14,6 +18,8 @@ class Routes {
 
   static const String conversations = '/';
   static const String chat = '/chat/:id';
+  static const String compose = '/compose';
+  static const String peerDetail = '/peer/:hash';
   static const String network = '/network';
   static const String map = '/map';
   static const String rnode = '/rnode';
@@ -31,26 +37,44 @@ final router = GoRouter(
       },
       branches: [
         StatefulShellBranch(
+        routes: [
+        GoRoute(
+          path: Routes.conversations,
+          builder: (context, state) => const ConversationsScreen(),
           routes: [
             GoRoute(
-              path: Routes.conversations,
-              builder: (context, state) => const ConversationsScreen(),
-              routes: [
-                GoRoute(
-                  path: 'chat/:id',
-                  builder: (context, state) => ChatScreen(
-                    conversationId: state.pathParameters['id']!,
-                  ),
-                ),
-              ],
+              path: 'chat/:id',
+              builder: (context, state) => ChatScreen(
+                conversationId: state.pathParameters['id']!,
+              ),
+            ),
+            GoRoute(
+              path: 'compose',
+              builder: (context, state) => const ComposeScreen(),
             ),
           ],
+        ),
+        ],
         ),
         StatefulShellBranch(
           routes: [
             GoRoute(
               path: Routes.network,
               builder: (context, state) => const NetworkScreen(),
+              routes: [
+                GoRoute(
+                  path: 'peer/:hash',
+                  builder: (context, state) {
+                    final peer = state.extra as Peer?;
+                    if (peer == null) {
+                      return const Scaffold(
+                        body: Center(child: Text('Peer not found')),
+                      );
+                    }
+                    return PeerDetailScreen(peer: peer);
+                  },
+                ),
+              ],
             ),
           ],
         ),

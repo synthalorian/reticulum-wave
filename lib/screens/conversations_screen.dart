@@ -88,7 +88,7 @@ class _ConversationsScreenState extends ConsumerState<ConversationsScreen> {
             ),
       floatingActionButton: FloatingActionButton(
         onPressed: () {
-          // TODO: new conversation / peer selector
+          context.push('/compose');
         },
         child: const Icon(Icons.add),
       ),
