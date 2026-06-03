@@ -5,44 +5,46 @@ import '../services/rnode_service.dart';
 import '../services/mock/mock_reticulum_service.dart';
 import '../services/mock/mock_lxmf_service.dart';
 import '../services/mock/mock_rnode_service.dart';
+import '../services/api/api_reticulum_service.dart';
+import '../services/api/api_lxmf_service.dart';
 import '../models/models.dart';
 
+/// Whether to use the real API backend or mocks.
+const bool _useRealApi = true;
+
 /// Provider for the Reticulum network service.
-/// Swap [MockReticulumService] for the real implementation when ready.
 final reticulumServiceProvider = Provider<ReticulumService>((ref) {
+  if (_useRealApi) {
+    final service = ApiReticulumService();
+    service.start();
+    ref.onDispose(() => service.dispose());
+    return service;
+  }
+
   final service = MockReticulumService();
-
-  ref.onDispose(() {
-    service.dispose();
-  });
-
+  ref.onDispose(() => service.dispose());
   return service;
 });
 
 /// Provider for the LXMF messaging service.
-/// Swap [MockLxmfService] for the real implementation when ready.
 final lxmfServiceProvider = Provider<LxmfService>((ref) {
+  if (_useRealApi) {
+    final service = ApiLxmfService();
+    service.startPolling();
+    ref.onDispose(() => service.dispose());
+    return service;
+  }
+
   final service = MockLxmfService();
-
-  // Start simulating incoming messages
   service.startIncomingSimulation();
-
-  ref.onDispose(() {
-    service.dispose();
-  });
-
+  ref.onDispose(() => service.dispose());
   return service;
 });
 
 /// Provider for the RNode hardware service.
-/// Swap [MockRNodeService] for the real implementation when ready.
 final rnodeServiceProvider = Provider<RNodeService>((ref) {
   final service = MockRNodeService();
-
-  ref.onDispose(() {
-    service.dispose();
-  });
-
+  ref.onDispose(() => service.dispose());
   return service;
 });
 
