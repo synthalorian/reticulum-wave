@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -65,6 +66,61 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
         );
       }
     });
+  }
+
+  void _showAttachmentSheet(BuildContext context) {
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: AppColors.surface,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
+      ),
+      builder: (context) => SafeArea(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const SizedBox(height: 8),
+            Container(
+              width: 40,
+              height: 4,
+              decoration: BoxDecoration(
+                color: AppColors.divider,
+                borderRadius: BorderRadius.circular(2),
+              ),
+            ),
+            const SizedBox(height: 16),
+            ListTile(
+              leading: const Icon(Icons.photo, color: AppColors.electricPurple),
+              title: const Text('Photo', style: TextStyle(color: AppColors.textPrimary)),
+              onTap: () {
+                Navigator.pop(context);
+                // TODO: image picker
+              },
+            ),
+            ListTile(
+              leading: const Icon(Icons.insert_drive_file, color: AppColors.electricPurple),
+              title: const Text('File', style: TextStyle(color: AppColors.textPrimary)),
+              onTap: () {
+                Navigator.pop(context);
+                // TODO: file picker
+              },
+            ),
+            const SizedBox(height: 16),
+          ],
+        ),
+      ),
+    );
+  }
+
+  void _showVoiceRecorder(BuildContext context) {
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: AppColors.surface,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
+      ),
+      builder: (context) => const _VoiceRecorderSheet(),
+    );
   }
 
   @override
@@ -148,6 +204,8 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
           _ComposeBar(
             controller: _controller,
             onSend: _sendMessage,
+            onAttach: () => _showAttachmentSheet(context),
+            onVoice: () => _showVoiceRecorder(context),
           ),
         ],
       ),
@@ -160,10 +218,14 @@ class _ComposeBar extends StatelessWidget {
   const _ComposeBar({
     required this.controller,
     required this.onSend,
+    this.onAttach,
+    this.onVoice,
   });
 
   final TextEditingController controller;
   final VoidCallback onSend;
+  final VoidCallback? onAttach;
+  final VoidCallback? onVoice;
 
   @override
   Widget build(BuildContext context) {
@@ -178,9 +240,11 @@ class _ComposeBar extends StatelessWidget {
           children: [
             IconButton(
               icon: const Icon(Icons.attach_file, color: AppColors.textSecondary),
-              onPressed: () {
-                // TODO: file attachment
-              },
+              onPressed: onAttach,
+            ),
+            IconButton(
+              icon: const Icon(Icons.mic, color: AppColors.textSecondary),
+              onPressed: onVoice,
             ),
             Expanded(
               child: TextField(
@@ -213,6 +277,111 @@ class _ComposeBar extends StatelessWidget {
                 ),
                 child: const Icon(Icons.send, color: Colors.white, size: 20),
               ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+/// Voice recorder bottom sheet UI.
+class _VoiceRecorderSheet extends StatefulWidget {
+  const _VoiceRecorderSheet();
+
+  @override
+  State<_VoiceRecorderSheet> createState() => _VoiceRecorderSheetState();
+}
+
+class _VoiceRecorderSheetState extends State<_VoiceRecorderSheet> {
+  bool _recording = false;
+  int _seconds = 0;
+  Timer? _timer;
+
+  void _startRecording() {
+    setState(() => _recording = true);
+    _timer = Timer.periodic(const Duration(seconds: 1), (_) {
+      setState(() => _seconds++);
+    });
+  }
+
+  void _stopRecording() {
+    _timer?.cancel();
+    setState(() => _recording = false);
+    // TODO: send voice message via LxmfService
+    Navigator.pop(context);
+  }
+
+  String get _formattedTime {
+    final m = (_seconds ~/ 60).toString().padLeft(2, '0');
+    final s = (_seconds % 60).toString().padLeft(2, '0');
+    return '$m:$s';
+  }
+
+  @override
+  void dispose() {
+    _timer?.cancel();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return SafeArea(
+      child: Padding(
+        padding: const EdgeInsets.all(24),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Text(
+              _recording ? 'Recording...' : 'Hold to Record',
+              style: const TextStyle(
+                color: AppColors.textPrimary,
+                fontSize: 18,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+            const SizedBox(height: 24),
+            Text(
+              _formattedTime,
+              style: const TextStyle(
+                color: AppColors.textPrimary,
+                fontSize: 48,
+                fontWeight: FontWeight.bold,
+                fontFeatures: [FontFeature.tabularFigures()],
+              ),
+            ),
+            const SizedBox(height: 24),
+            GestureDetector(
+              onTapDown: (_) => _startRecording(),
+              onTapUp: (_) => _stopRecording(),
+              onTapCancel: () => _stopRecording(),
+              child: AnimatedContainer(
+                duration: const Duration(milliseconds: 200),
+                width: _recording ? 96 : 80,
+                height: _recording ? 96 : 80,
+                decoration: BoxDecoration(
+                  color: _recording ? AppColors.offline : AppColors.electricPurple,
+                  shape: BoxShape.circle,
+                  boxShadow: [
+                    BoxShadow(
+                      color: (_recording ? AppColors.offline : AppColors.electricPurple)
+                          .withValues(alpha: 0.4),
+                      blurRadius: 20,
+                      spreadRadius: 4,
+                    ),
+                  ],
+                ),
+                child: Icon(
+                  _recording ? Icons.stop : Icons.mic,
+                  color: Colors.white,
+                  size: 36,
+                ),
+              ),
+            ),
+            const SizedBox(height: 16),
+            Text(
+              _recording ? 'Release to send' : 'Tap and hold',
+              style: const TextStyle(color: AppColors.textSecondary),
             ),
           ],
         ),
