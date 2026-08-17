@@ -223,10 +223,10 @@ lib/screens/identity_screen.dart
 
 ```bash
 # 1. Start Reticulum Link (in another terminal)
-cd /home/synthalorian 🎹🤺/projects/reticulum-link && mix phx.server
+cd /home/synth/projects/reticulum-link && mix phx.server
 
 # 2. Run Wave
-cd /home/synthalorian 🎹🤺/projects/reticulum-wave
+cd /home/synth/projects/reticulum-wave
 flutter run
 
 # 3. Or build Linux release

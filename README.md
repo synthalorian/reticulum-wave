@@ -160,7 +160,7 @@ Apache License 2.0 — see [LICENSE](LICENSE).
 
 ## Credits
 
-Built by **synthalorian 🎹🤺** (synthalorian) with **synthclaw**.
+Built by **synth** (synthalorian) with **synthclaw**.
 
 ---
 
