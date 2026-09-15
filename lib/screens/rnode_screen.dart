@@ -575,7 +575,7 @@ class _DropdownRow<T> extends StatelessWidget {
           ),
           Expanded(
             child: DropdownButtonFormField<T>(
-              initialValue: value,
+              value: value,
               dropdownColor: AppColors.surface,
               style: const TextStyle(color: AppColors.textPrimary),
               decoration: InputDecoration(
