@@ -58,5 +58,25 @@ jobs:
       - run: flutter pub get
       - run: dart run build_runner build --delete-conflicting-outputs
       - run: flutter create --platforms=android .
-      - run: sed -i 's/flutter.minSdkVersion/23/' android/app/build.gradle
+      - name: Set minSdk to 23
+        run: |
+          # Newer Flutter templates generate build.gradle.kts; older ones generate build.gradle.
+          gradle_file=""
+          for f in android/app/build.gradle.kts android/app/build.gradle; do
+            if [ -f "$f" ]; then gradle_file="$f"; break; fi
+          done
+          if [ -z "$gradle_file" ]; then
+            echo "::error::No android/app/build.gradle(.kts) found after flutter create"
+            exit 1
+          fi
+          if ! grep -q 'flutter\.minSdkVersion' "$gradle_file"; then
+            echo "::error::flutter.minSdkVersion not found in $gradle_file"
+            exit 1
+          fi
+          sed -i 's/flutter\.minSdkVersion/23/' "$gradle_file"
+          if grep -q 'flutter\.minSdkVersion' "$gradle_file"; then
+            echo "::error::flutter.minSdkVersion replacement failed in $gradle_file"
+            exit 1
+          fi
+          grep -n 'minSdk' "$gradle_file"
       - run: flutter build apk --release
