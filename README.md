@@ -89,7 +89,7 @@ Designed for use with LoRa radio hardware connected via USB or Bluetooth. Works 
 
 | Component       | Technology                          |
 |-----------------|-------------------------------------|
-| Framework       | Flutter 3.24+ / Dart 3.5+          |
+| Framework       | Flutter 3.47+ / Dart 3.13+         |
 | State Mgmt      | Riverpod 2.x                        |
 | Reticulum       | FFI (Rust) or Python subprocess     |
 | Serial/USB      | flutter_usb_serial, web_serial      |
@@ -102,8 +102,8 @@ Designed for use with LoRa radio hardware connected via USB or Bluetooth. Works 
 
 ### Prerequisites
 
-- Flutter 3.24+
-- Dart 3.5+
+- Flutter 3.47+
+- Dart 3.13+
 - Android Studio / Xcode (for mobile builds)
 - CMake / LLVM (for FFI/Rust bridge)
 
